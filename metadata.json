@@ -1,0 +1,5 @@
+{
+  "name": "AI Debate Arena",
+  "description": "A web application that hosts a debate between three AI models, primarily driven by real-time news headlines from a BBC RSS feed. The user acts as a moderator and can inject topics into the conversation.",
+  "requestFramePermissions": []
+}

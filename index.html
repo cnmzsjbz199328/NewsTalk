@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Debate Arena</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              'bunker': {
+                '50': '#f5f7f8',
+                '100': '#e6eaed',
+                '200': '#ced9e0',
+                '300': '#a9b9c6',
+                '400': '#7e94a8',
+                '500': '#5f768b',
+                '600': '#4a5e71',
+                '700': '#3e4e5e',
+                '800': '#364350',
+                '900': '#303b46',
+                '950': '#212830',
+              },
+            }
+          }
+        }
+      }
+    </script>
+  <script type="importmap">
+{
+  "imports": {
+    "@gradio/client": "https://cdn.jsdelivr.net/npm/@gradio/client/dist/index.js",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "react/": "https://aistudiocdn.com/react@^19.1.1/",
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.18.0"
+  }
+}
+</script>
+</head>
+  <body class="bg-white dark:bg-bunker-950 text-bunker-800 dark:text-bunker-200">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

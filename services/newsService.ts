@@ -26,7 +26,11 @@ export const fetchNews = async (feedUrl: string, useProxy: boolean, proxyUrl: st
 
     const items = Array.from(xml.querySelectorAll('item')).slice(0, 50);
     return items.map(item => {
-      const thumbnailElement = item.querySelector('media\\:thumbnail');
+      // Use getElementsByTagNameNS for robust namespace handling, which is the
+      // correct way to parse namespaced XML tags like <media:thumbnail>.
+      const mediaNS = 'http://search.yahoo.com/mrss/';
+      const thumbnailElements = item.getElementsByTagNameNS(mediaNS, 'thumbnail');
+      const thumbnailElement = thumbnailElements.length > 0 ? thumbnailElements[0] : null;
       const thumbnailUrl = thumbnailElement ? thumbnailElement.getAttribute('url') : undefined;
       
       return {

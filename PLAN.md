@@ -1,78 +1,95 @@
-# Plan: Refactor from Gemini to a Three-Model Gradio Architecture
+Next.js Full-Stack Architecture Design
+1. Vision & Core Principles
+The goal is to refactor the AI Debate Arena from a single-page application into a robust, high-performance, full-stack application using the Next.js framework. This architecture prioritizes:
+Logical Separation: While the frontend and backend code will live in the same project for development and deployment simplicity, they will be logically and functionally separate. The frontend (React components) will be the user interface, and the backend (API Route Handlers) will be the secure business logic layer.
+Performance: Leverage Next.js's capabilities like Server-Side Rendering (SSR), Server Components, and intelligent caching to ensure fast initial page loads and a responsive user experience.
+Scalability: The backend will be a set of serverless functions, deployed on Vercel's edge network. This provides automatic scaling to handle traffic spikes without manual configuration.
+Security: All communication with external services (Gradio AI models, TTS services) will be handled exclusively by our backend API routes. Client-side code will never directly contact these external services, protecting credentials and centralizing logic.
+Developer Experience & Deployability: A unified Next.js codebase simplifies development, and native integration with Vercel allows for seamless, one-click deployments.
+2. Technology Stack
+Framework: Next.js (using the App Router)
+Language: TypeScript
+UI Library: React
+Styling: Tailwind CSS
+Deployment: Vercel
+3. Project Structure
+The project will be reorganized into the standard Next.js App Router structure.
+code
+Code
+/
+├── app/
+│   ├── layout.tsx                # Root Layout (replaces index.html body)
+│   ├── page.tsx                  # Main Page Component (Server Component, replaces App.tsx)
+│   │
+│   ├── components/               # All UI Components (Client Components)
+│   │   ├── ChatBox.tsx
+│   │   ├── ChatInput.tsx
+│   │   ├── NewsPanel.tsx
+│   │   └── SettingsPanel.tsx
+│   │
+│   ├── hooks/                    # Custom hooks for complex state logic
+│   │   └── useDebateManager.ts   # Hook to manage the debate state and pipeline
+│   │
+│   └── api/                      # The Backend (Serverless Functions)
+│       ├── debate/
+│       │   └── [speaker]/route.ts # API to get a response from a specific debater
+│       ├── tts/
+│       │   └── route.ts          # API for Text-to-Speech generation
+│       └── news/
+│           └── route.ts          # API to fetch and cache the BBC news feed
+│
+├── lib/
+│   └── types.ts                  # Shared type definitions
+│
+├── public/                       # Static assets (images, fonts, etc.)
+│
+└── .env.local                    # Environment variables (API keys, etc.)
+4. Data Flow & Communication Model
+This is the core of the front-end/back-end separation. The client-side application will no longer contain the logic for fetching from external services. Instead, it will only communicate with its own backend API, which then acts as a secure proxy.
+Flow Diagram:
+code
+Mermaid
+sequenceDiagram
+    participant User
+    participant Browser as Browser (Client Components)
+    participant NextServer as Next.js Server (API Routes)
+    participant Gradio as External Gradio APIs
+    participant BBC as BBC RSS Feed
+    participant TTS as External TTS API
 
-**Objective:** Replace the current AI backend, which uses a single Google Gemini model, with a multi-model system that connects to three separate Gradio clients hosted on Hugging Face Spaces, as per the user's provided example.
+    User->>Browser: Loads page
+    Browser->>NextServer: GET / (Initial Page Load)
+    NextServer->>NextServer: GET /api/news (fetch news internally)
+    NextServer->>BBC: Fetch RSS Feed
+    BBC-->>NextServer: RSS XML
+    NextServer-->>Browser: Sends fully rendered HTML (with news)
 
----
+    User->>Browser: Clicks "Start News Cycle"
+    Browser->>NextServer: POST /api/debate/tom (Get Tom's first response)
+    NextServer->>Gradio: Call Tom's Gradio Model
+    Gradio-->>NextServer: Tom's Text Response
+    NextServer-->>Browser: { text: "..." }
 
-### Phase 1: Configuration and Constants (`constants.ts`)
+    Note over Browser: Text received, now get audio...
+    Browser->>NextServer: POST /api/tts (with Tom's text)
+    NextServer->>TTS: Call Kokoro-TTS Service
+    TTS-->>NextServer: Audio file URL
+    NextServer-->>Browser: { audioSrc: "..." }
 
-1.  **Define Model IDs:**
-    *   Introduce three new constants to hold the Hugging Face Space IDs for each debater:
-        *   `MODEL_TOM_ID = "Tom199328/gemma-3"`
-        *   `MODEL_MARK_ID = "Tom1986/gemma-3-270m-chat"`
-        *   `MODEL_SAM_ID = "Tom1986/gemma-3-270m"`
-2.  **Update Sender Details:**
-    *   Modify the `SENDER_DETAILS` object to associate each debater (`Tom`, `Mark`, `Sam`) with their respective model ID. This will make the service layer code cleaner and more maintainable.
-
----
-
-### Phase 2: AI Service Layer Refactor (`services/aiDebateService.ts`)
-
-This is the most critical part of the refactor. The entire file will be rewritten to remove `@google/genai` and implement `@gradio/client`.
-
-1.  **Connection Management:**
-    *   Create three module-level variables to hold the connected Gradio client instances (e.g., `appTom`, `appMark`, `appSam`).
-    *   Implement a new, exported function `connectToDebaters()`.
-        *   This function will be `async` and will check if the clients are already connected.
-        *   If not connected, it will use `Promise.all` to connect to all three Hugging Face Spaces in parallel using `client.connect()`.
-        *   It will store the successful connections in the module-level variables.
-        *   It will return a status indicating success or failure, including any error messages. This function will be called from the main `App` component.
-
-2.  **API Call Logic:**
-    *   Rewrite `getTomResponse`, `getMarkResponse`, and `getSamResponse`.
-    *   These functions will no longer call Gemini. Instead, they will:
-        *   Check if the corresponding Gradio client (`appTom`, etc.) is connected. If not, throw an error.
-        *   Use the client's `predict()` method to call the appropriate API endpoint.
-            *   Tom (Model A) will call `/predict`.
-            *   Mark (Model B) will call `/chat`.
-            *   Sam (Model C) will call `/predict`.
-        *   Construct the correct payload for each model based on the example file (e.g., `{ message: prompt, max_tokens: ... }`).
-        *   Parse the response data correctly, handling the case where the result might be `result.data[0]` or just `result.data`.
-        *   Return the final text string.
-
-3.  **Prompting Logic:**
-    *   The `createPromptForModel` function is largely reusable. It will be adjusted to match the specific prompting strategies from the user's example file.
-
----
-
-### Phase 3: Application Layer Integration (`App.tsx`)
-
-1.  **State Management for Connections:**
-    *   Introduce new state variables to manage the connection process:
-        *   `areModelsConnected: boolean` (default: `false`)
-        *   `isConnecting: boolean` (default: `false`)
-        *   `connectionError: string | null` (default: `null`)
-2.  **Connection Lifecycle:**
-    *   Modify the `handleStart` function. Before starting the debate, it must ensure the models are connected.
-    *   The first time the user clicks "Start", the app will:
-        *   Set `isConnecting` to `true`.
-        *   Display a system message like "Connecting to AI debaters...".
-        *   Call the `connectToDebaters()` function from the service.
-        *   On success, set `isConnecting` to `false`, `areModelsConnected` to `true`, and proceed with the debate.
-        *   On failure, set `isConnecting` to `false`, store the error message, and display it to the user.
-3.  **UI Feedback:**
-    *   The "Start" button in `ChatInput` must be disabled while `isConnecting` is true.
-    *   System messages (`addMessage`) will be used to provide clear feedback to the user about the connection status ("Connecting...", "Connection successful!", "Connection failed: ...").
-4.  **Debate Loop:**
-    *   The core `debateLoop` logic will remain similar, but it now relies on the completely refactored service functions. No major changes should be needed here, demonstrating the value of service-layer abstraction.
-
----
-
-### Phase 4: Component Prop Updates (`components/ChatInput.tsx`)
-
-1.  **Pass Down Connection State:**
-    *   The `App` component will pass the new `isConnecting` state down to the `ChatInput` component as a prop.
-2.  **Update Disabled Logic:**
-    *   The `disabled` attribute of the "Start" button will be updated to include `isConnecting`.
-
-By following this plan, we will systematically replace the application's core AI logic to perfectly match your three-model architecture, ensuring a robust and well-integrated solution.
+    Note over Browser: Play audio, and in parallel...
+    Browser->>NextServer: POST /api/debate/mark (Pre-fetch Mark's response)
+    NextServer->>Gradio: Call Mark's Gradio Model
+    Gradio-->>NextServer: Mark's Text Response
+    NextServer-->>Browser: { text: "..." }
+Key Changes in Logic:
+News Fetching (/api/news): The Next.js backend will fetch the BBC news feed. This allows us to implement server-side caching (e.g., refetch news only every 5 minutes), reducing redundant requests and improving performance.
+Debate Logic (/api/debate/[speaker]): Instead of a single function, we'll use a dynamic route. The client will call /api/debate/tom, /api/debate/mark, etc. The backend route handler will receive the speaker's name, construct the correct prompt, and call the appropriate Gradio model.
+TTS Logic (/api/tts): The client sends the text to /api/tts. The backend handles the round-robin logic and calls one of the Gradio TTS instances.
+Client-Side Orchestration: The complex pipeline logic (the producer/consumer model) will remain on the client, likely encapsulated within a custom hook (useDebateManager). This hook will be responsible for managing the turnQueue and calling our internal API routes in the correct sequence.
+5. State Management
+We will maintain the current client-side state management approach using React's built-in hooks (useState, useRef, useEffect). For better organization and reusability, the entire debate state (messages, turn queue, running status, etc.) and the functions that modify it (handleStart, handleStop) will be consolidated into a custom useDebateManager hook. The main page.tsx will then be very clean, simply calling this hook to get all the data and handlers it needs to pass to the UI components.
+6. Deployment on Vercel
+This architecture is tailor-made for Vercel.
+One-Click Deployment: Connecting the project's Git repository (e.g., on GitHub) to a Vercel project will enable automatic deployments on every push to the main branch.
+Environment Variables: Any secret keys or external API URLs will be stored securely in Vercel's project settings, accessible via process.env in our backend API routes. They will not be exposed to the client-side browser.
+Serverless Functions: Each file inside /app/api will be automatically deployed as an independent, auto-scaling serverless function, ensuring our backend is both efficient and resilient.

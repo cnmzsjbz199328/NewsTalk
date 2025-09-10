@@ -1,4 +1,3 @@
-
 import { NewsItem } from '../types';
 
 export const fetchNews = async (feedUrl: string, useProxy: boolean, proxyUrl: string): Promise<NewsItem[]> => {
@@ -26,12 +25,18 @@ export const fetchNews = async (feedUrl: string, useProxy: boolean, proxyUrl: st
     }
 
     const items = Array.from(xml.querySelectorAll('item')).slice(0, 50);
-    return items.map(item => ({
-      title: item.querySelector('title')?.textContent ?? 'No Title',
-      link: item.querySelector('link')?.textContent ?? '',
-      pubDate: item.querySelector('pubDate')?.textContent ?? '',
-      description: item.querySelector('description')?.textContent ?? '',
-    }));
+    return items.map(item => {
+      const thumbnailElement = item.querySelector('media\\:thumbnail');
+      const thumbnailUrl = thumbnailElement ? thumbnailElement.getAttribute('url') : undefined;
+      
+      return {
+        title: item.querySelector('title')?.textContent ?? 'No Title',
+        link: item.querySelector('link')?.textContent ?? '',
+        pubDate: item.querySelector('pubDate')?.textContent ?? '',
+        description: item.querySelector('description')?.textContent ?? '',
+        thumbnailUrl: thumbnailUrl,
+      };
+    });
   } catch (error) {
     console.error("Failed to fetch news:", error);
     throw error;

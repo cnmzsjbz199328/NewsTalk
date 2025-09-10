@@ -4,6 +4,7 @@ export interface NewsItem {
   link: string;
   pubDate: string;
   description: string;
+  thumbnailUrl?: string;
 }
 
 export enum Sender {

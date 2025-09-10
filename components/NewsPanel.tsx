@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { NewsItem } from '../types';
 
@@ -36,7 +35,7 @@ export const NewsPanel: React.FC<NewsPanelProps> = ({ newsItems, highlightedInde
               key={item.title + index}
               ref={index === highlightedIndex ? activeItemRef : null}
               onClick={() => !isDebateRunning && onItemSelect(index)}
-              className={`p-3 rounded-lg border transition-all duration-300 ${
+              className={`p-3 rounded-lg border transition-all duration-300 flex items-start gap-3 ${
                 isDebateRunning
                   ? 'cursor-not-allowed'
                   : 'cursor-pointer hover:bg-bunker-100 dark:hover:bg-bunker-800'
@@ -46,12 +45,21 @@ export const NewsPanel: React.FC<NewsPanelProps> = ({ newsItems, highlightedInde
                   : 'bg-white dark:bg-bunker-800/50 border-bunker-200 dark:border-bunker-700/50'
               }`}
             >
-              <h4 className={`font-semibold text-sm ${index === highlightedIndex ? 'text-sky-800 dark:text-sky-200' : 'text-bunker-800 dark:text-bunker-200'}`}>
-                {item.title}
-              </h4>
-              <p className="text-xs text-bunker-500 dark:text-bunker-400 mt-1">
-                {new Date(item.pubDate).toLocaleString()}
-              </p>
+              {item.thumbnailUrl && (
+                <img 
+                  src={item.thumbnailUrl} 
+                  alt={item.title}
+                  className="w-20 h-14 object-cover rounded-md flex-shrink-0 border border-bunker-200 dark:border-bunker-700"
+                />
+              )}
+              <div className="flex-grow">
+                <h4 className={`font-semibold text-sm ${index === highlightedIndex ? 'text-sky-800 dark:text-sky-200' : 'text-bunker-800 dark:text-bunker-200'}`}>
+                  {item.title}
+                </h4>
+                <p className="text-xs text-bunker-500 dark:text-bunker-400 mt-1">
+                  {new Date(item.pubDate).toLocaleString()}
+                </p>
+              </div>
             </div>
           ))}
         </div>

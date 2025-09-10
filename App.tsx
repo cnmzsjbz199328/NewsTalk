@@ -58,6 +58,7 @@ const App: React.FC = () => {
   const [selectedNewsIndex, setSelectedNewsIndex] = useState<number | null>(0);
   
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [isSettingsVisible, setIsSettingsVisible] = useState(true);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -153,6 +154,7 @@ const App: React.FC = () => {
     if (byUser) {
         addMessage(Sender.System, 'Debate stopped by user.');
     }
+    setIsSettingsVisible(true);
   }, [addMessage]);
 
 
@@ -309,6 +311,7 @@ const App: React.FC = () => {
 
     if (selectedNewsIndex !== null && newsItems[selectedNewsIndex]) {
       setIsNewsCycleMode(true);
+      setIsSettingsVisible(false);
       const newsItem = newsItems[selectedNewsIndex];
       topic = `The debate is about this news story: "${newsItem.title}". Here is a summary: ${newsItem.description}`;
     } else if (topic) {
@@ -338,9 +341,11 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen font-sans bg-bunker-100 dark:bg-bunker-950 text-bunker-800 dark:text-bunker-200">
+    <div className="flex h-screen font-sans bg-bunker-100 dark:bg-bunker-950 text-bunker-800 dark:text-bunker-200 overflow-hidden">
       <audio ref={audioRef} />
-      <SettingsPanel settings={settings} onSettingsChange={handleSettingsChange} theme={theme} onThemeChange={handleThemeChange} />
+      <div className={`flex-shrink-0 overflow-hidden transition-all duration-500 ease-in-out ${isSettingsVisible ? 'w-96' : 'w-0'}`}>
+        <SettingsPanel settings={settings} onSettingsChange={handleSettingsChange} theme={theme} onThemeChange={handleThemeChange} />
+      </div>
       <main className="flex-grow flex flex-col h-screen">
         <header className="flex items-center justify-between p-4 border-b border-bunker-200 dark:border-bunker-800 bg-bunker-50 dark:bg-bunker-900">
           <h1 className="text-2xl font-bold text-bunker-900 dark:text-bunker-100">

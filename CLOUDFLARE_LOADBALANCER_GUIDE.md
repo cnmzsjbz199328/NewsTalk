@@ -90,7 +90,7 @@ This is the final and simplest step. You just need to tell your application to u
 
 2.  **Locate this line:**
     ```typescript
-    const TTS_SPACE_URL = "Tom1986/Kokoro-TTS";
+    const TTS_SPACE_URL = "Tom1986/Kokoro-TTS" and “Tom0403309722/Kokoro-TTS”;
     ```
 
 3.  **Replace it with the hostname you created in Step 4:**

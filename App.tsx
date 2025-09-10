@@ -162,10 +162,10 @@ const App: React.FC = () => {
         if (!isRunningRef.current) return;
 
         const maxTurns = settings.debateRounds * DEBATERS.length;
-        const queuedTextTurns = turnQueue.filter(t => t.status === 'pending_text' || t.status === 'text_ready').length;
-        const currentTurnNumber = turnCounterRef.current + queuedTextTurns;
+        const queuedTurns = turnQueue.length;
+        const currentTurnNumber = turnCounterRef.current + queuedTurns;
 
-        if (currentTurnNumber < maxTurns && queuedTextTurns < PIPELINE_BUFFER) {
+        if (currentTurnNumber < maxTurns && queuedTurns < PIPELINE_BUFFER) {
             const nextSender = DEBATERS[currentTurnNumber % DEBATERS.length];
             const turnId = Date.now().toString() + Math.random();
 
